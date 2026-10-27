@@ -856,10 +856,10 @@ footer a:hover{border-color:#fff}
       If there isn't, we'll tell you that too.
     </p>
 
-    <!-- FORMSPREE: create a form at formspree.io with the address that should receive
-         enquiries, then replace YOUR_FORM_ID below with the id from your endpoint
-         (it looks like https://formspree.io/f/mabcdefg). Nothing else needs changing. -->
-    <form class="form" id="enquiry" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+    <!-- FORMSUBMIT (free, no account): enquiries go to the address in the action URL,
+         with copies to the _cc addresses below. The FIRST submission from the live site
+         sends an activation email to that address; click it once and the form is on. -->
+    <form class="form" id="enquiry" action="https://formsubmit.co/ajax/pooja.b@navgurukul.org" method="POST">
       <div class="form-grid">
         <div class="field">
           <label for="f-name">Your name <span class="req">*</span></label>
@@ -934,15 +934,13 @@ footer a:hover{border-color:#fff}
 
       <input type="hidden" name="_subject" value="Partner enquiry — Speech-to-Speech">
 
-      <!-- Copies each enquiry to the other two addresses. Formspree applies _cc on paid
-           plans only, so send one test submission and confirm all three received it.
-           Better: point the form action at a group alias (e.g. partnerships@navgurukul.org)
-           that contains all three, and delete this line. -->
-      <input type="hidden" name="_cc" value="abhishek.vl@navgurukul.org,pooja.b@navgurukul.org">
+      <input type="hidden" name="_template" value="table">
+      <!-- Copies of each enquiry. Comma-separated, no spaces. -->
+      <input type="hidden" name="_cc" value="abhishek.vl@navgurukul.org">
 
       <div class="hp" aria-hidden="true">
         <label for="f-hp">Leave this field empty</label>
-        <input id="f-hp" name="_gotcha" type="text" tabindex="-1" autocomplete="off">
+        <input id="f-hp" name="_honey" type="text" tabindex="-1" autocomplete="off">
       </div>
 
       <div class="form-submit">
@@ -1001,7 +999,7 @@ footer a:hover{border-color:#fff}
 
 <script>
 /* Submit the enquiry form in the background so the person stays on the page.
-   Formspree returns JSON when asked; on failure we fall back to the email address. */
+   FormSubmit's /ajax/ endpoint returns JSON; on failure we fall back to the email address. */
 (function(){
   var form = document.getElementById('enquiry');
   if(!form) return;
@@ -1013,7 +1011,7 @@ footer a:hover{border-color:#fff}
     e.preventDefault();
     msg.textContent = '';
 
-    if(form.action.indexOf('YOUR_FORM_ID') !== -1){
+    if(form.action.indexOf('formsubmit.co') === -1){
       msg.textContent = 'This form isn’t connected yet. Please email us instead.';
       return;
     }
@@ -1027,18 +1025,15 @@ footer a:hover{border-color:#fff}
       body: new FormData(form),
       headers: { 'Accept': 'application/json' }
     }).then(function(res){
-      if(res.ok){
-        form.hidden = true;
-        done.hidden = false;
-        done.setAttribute('tabindex','-1');
-        done.focus();
-        return;
-      }
-      return res.json().then(function(data){
-        var detail = data && data.errors && data.errors.length
-          ? data.errors.map(function(x){ return x.message; }).join(', ')
-          : 'Something went wrong at our end.';
-        throw new Error(detail);
+      return res.json().catch(function(){ return {}; }).then(function(data){
+        if(res.ok && data && String(data.success) === 'true'){
+          form.hidden = true;
+          done.hidden = false;
+          done.setAttribute('tabindex','-1');
+          done.focus();
+          return;
+        }
+        throw new Error((data && data.message) || 'Something went wrong at our end.');
       });
     }).catch(function(err){
       msg.textContent = (err.message || 'Something went wrong.') +
