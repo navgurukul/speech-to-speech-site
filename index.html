@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Speech-to-Speech Infrastructure — NavGurukul</title>
+<meta name="description" content="Open-source speech-to-speech AI infrastructure that runs in the browser. Voice AI at roughly the cost of text, built for organisations serving Bharat.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --ink:#1A1633;
+  --ink-2:#514A6B;
+  --ink-3:#7C7594;
+  --paper:#F7F6F8;
+  --white:#FFFFFF;
+  --crimson:#D6006E;
+  --crimson-soft:#FCE9F3;
+  --amber:#E8933D;
+  --line:#DFDBE7;
+  --line-strong:#C7C1D6;
+
+  --display:"Bricolage Grotesque",Georgia,serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+
+  --gap:clamp(56px,7vw,104px);
+  --pad:clamp(20px,5vw,48px);
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--body);
+  font-size:17px;
+  line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+
+.wrap{max-width:1120px;margin:0 auto;padding:0 var(--pad)}
+.narrow{max-width:720px}
+
+h1,h2,h3{font-family:var(--display);font-weight:800;letter-spacing:-.02em;line-height:1.06;margin:0}
+h1{font-size:clamp(40px,6.6vw,76px)}
+h2{font-size:clamp(28px,4vw,44px)}
+h3{font-size:19px;font-weight:600;letter-spacing:-.01em;line-height:1.3}
+p{margin:0 0 1em}
+p:last-child{margin-bottom:0}
+a{color:var(--crimson)}
+
+.lede{font-size:clamp(18px,2.1vw,21px);color:var(--ink-2);max-width:60ch}
+.section-intro{max-width:62ch;color:var(--ink-2);margin-top:18px}
+
+/* ---------- header ---------- */
+header{
+  position:sticky;top:0;z-index:50;
+  background:rgba(247,246,248,.92);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.bar{display:flex;align-items:center;gap:28px;height:68px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);margin-right:auto}
+.logo img{height:26px;width:auto;display:block}
+.logo-fallback{
+  font-family:var(--display);font-weight:800;font-size:20px;letter-spacing:-.03em;
+}
+.logo-fallback span{color:var(--crimson)}
+nav.links{display:flex;gap:24px}
+nav.links a{color:var(--ink-2);text-decoration:none;font-size:15px}
+nav.links a:hover{color:var(--crimson)}
+@media (max-width:860px){nav.links{display:none}}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  font-family:var(--body);font-size:15px;font-weight:600;
+  padding:12px 22px;border-radius:2px;text-decoration:none;
+  border:1.5px solid var(--ink);
+  transition:background .15s ease,color .15s ease;
+}
+.btn-solid{background:var(--ink);color:var(--white)}
+.btn-solid:hover{background:var(--crimson);border-color:var(--crimson)}
+.btn-ghost{background:transparent;color:var(--ink)}
+.btn-ghost:hover{background:var(--ink);color:var(--white)}
+.btn-sm{padding:9px 16px;font-size:14px}
+a:focus-visible,button:focus-visible,input:focus-visible{
+  outline:3px solid var(--crimson);outline-offset:3px;
+}
+
+/* ---------- hero ---------- */
+.hero{padding:clamp(60px,9vw,110px) 0 0}
+.hero h1{max-width:15ch}
+.hero .lede{margin-top:26px}
+.hero-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:34px}
+
+.cost{margin-top:clamp(48px,7vw,80px);border-top:1px solid var(--line);padding-top:22px}
+.cost-labels{display:flex;justify-content:space-between;align-items:flex-end;gap:16px}
+.cost-labels div{max-width:23ch}
+.cost-num{font-family:var(--display);font-weight:800;font-size:clamp(22px,3.4vw,34px);letter-spacing:-.03em;line-height:1}
+.cost-num.now{color:var(--crimson)}
+.cost-cap{font-size:13.5px;color:var(--ink-3);margin-top:8px;line-height:1.4}
+.right{text-align:right}
+#wave{display:block;width:100%;height:clamp(72px,11vw,124px);margin-top:18px;overflow:visible}
+#wave rect{fill:var(--ink)}
+
+/* ---------- generic section ---------- */
+section{padding:var(--gap) 0}
+.rule{border-top:1px solid var(--line)}
+
+/* ---------- pipeline ---------- */
+.pipe{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-top:44px;border:1px solid var(--line);background:var(--white)}
+.pipe > div{padding:24px 20px 26px;border-right:1px solid var(--line)}
+.pipe > div:last-child{border-right:none}
+.step-n{font-family:var(--mono);font-size:12px;color:var(--crimson);display:block;margin-bottom:14px}
+.pipe h3{margin-bottom:8px}
+.pipe p{font-size:14.5px;color:var(--ink-2);line-height:1.5}
+@media (max-width:900px){
+  .pipe{grid-template-columns:1fr}
+  .pipe > div{border-right:none;border-bottom:1px solid var(--line)}
+  .pipe > div:last-child{border-bottom:none}
+}
+.pipe-note{margin-top:20px;font-size:15px;color:var(--ink-2)}
+
+/* ---------- specs ---------- */
+.specs{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-top:44px}
+.specs div{background:var(--paper);padding:22px 20px}
+.spec-v{font-family:var(--display);font-weight:800;font-size:26px;letter-spacing:-.03em;line-height:1.05}
+.spec-l{font-size:13.5px;color:var(--ink-2);margin-top:7px;line-height:1.45}
+@media (max-width:860px){.specs{grid-template-columns:repeat(2,1fr)}}
+
+/* ---------- demo ---------- */
+.demo{background:var(--ink);color:var(--white)}
+.demo h2{color:var(--white)}
+.demo .section-intro{color:#BDB6D2}
+.demo-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:38px;align-items:center}
+.demo-note{margin-top:26px;font-size:14.5px;color:#9A92BB;max-width:64ch;line-height:1.55}
+
+/* ---------- status ---------- */
+.status{margin-top:40px;padding:0;list-style:none;border-top:1px solid var(--line)}
+.status li{display:grid;grid-template-columns:140px 1fr;gap:28px;padding:20px 0;
+  border-bottom:1px solid var(--line);align-items:start}
+.status .tag{font-family:var(--mono);font-size:12.5px;padding-top:4px}
+.status .tag.now{color:var(--crimson)}
+.status .tag.soon{color:var(--ink-2)}
+.status .tag.later{color:var(--ink-3)}
+.status h3{margin-bottom:6px}
+.status p{font-size:15px;color:var(--ink-2);line-height:1.55}
+@media (max-width:640px){.status li{grid-template-columns:1fr;gap:6px}}
+.demo .btn-solid{background:var(--crimson);border-color:var(--crimson);color:#fff}
+.demo .btn-solid:hover{background:#fff;color:var(--ink);border-color:#fff}
+.demo .btn-ghost{color:#fff;border-color:#6A6290}
+.demo .btn-ghost:hover{background:#fff;color:var(--ink);border-color:#fff}
+
+/* ---------- sectors ---------- */
+.sector-head{display:flex;align-items:baseline;gap:12px;margin:44px 0 16px}
+.sector-head h3{font-family:var(--display);font-size:15px;font-weight:600;color:var(--ink)}
+.sector-head span{font-size:13.5px;color:var(--ink-3)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media (max-width:960px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:540px){.grid{grid-template-columns:1fr}}
+.tile{padding:20px;border:1px solid var(--line)}
+.tile.live{background:var(--white);border-color:var(--line-strong)}
+.tile.open{background:transparent;border-style:dashed}
+.tile h4{margin:0 0 8px;font-family:var(--body);font-size:16px;font-weight:600}
+.tile p{font-size:14px;color:var(--ink-2);line-height:1.5}
+.tile .metric{font-family:var(--mono);font-size:12.5px;color:var(--crimson);margin-top:12px;display:block}
+
+/* ---------- proof ---------- */
+.proof-list{margin-top:36px;border-top:1px solid var(--line)}
+.proof-list li{list-style:none;display:grid;grid-template-columns:190px 1fr;gap:24px;
+  padding:18px 0;border-bottom:1px solid var(--line)}
+.proof-list ul{margin:0;padding:0}
+.proof-k{font-family:var(--display);font-weight:800;font-size:20px;letter-spacing:-.02em;line-height:1.2}
+.proof-d{font-size:15px;color:var(--ink-2);line-height:1.55}
+@media (max-width:640px){.proof-list li{grid-template-columns:1fr;gap:4px}}
+
+/* ---------- steps ---------- */
+.steps{counter-reset:s;margin-top:44px;padding:0;list-style:none;
+  display:grid;grid-template-columns:1fr 1fr;gap:0 48px}
+@media (max-width:820px){.steps{grid-template-columns:1fr}}
+.steps li{counter-increment:s;padding:20px 0;border-bottom:1px solid var(--line);display:flex;gap:18px}
+.steps li::before{
+  content:counter(s);font-family:var(--mono);font-size:13px;color:var(--white);
+  background:var(--ink);width:26px;height:26px;flex:0 0 26px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;margin-top:3px;
+}
+.steps h3{margin-bottom:6px}
+.steps p{font-size:14.5px;color:var(--ink-2);line-height:1.5}
+
+/* ---------- exchange ---------- */
+.exchange{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);
+  border:1px solid var(--line);margin-top:44px}
+.exchange > div{background:var(--paper);padding:30px 28px}
+.exchange > div:first-child{background:var(--white)}
+.exchange h3{font-family:var(--display);font-size:20px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px}
+.exchange .sub{font-size:14px;color:var(--ink-3);margin-bottom:20px}
+.exchange ul{margin:0;padding:0;list-style:none}
+.exchange li{padding:11px 0 11px 20px;border-top:1px solid var(--line);font-size:15px;
+  color:var(--ink-2);position:relative;line-height:1.5}
+.exchange li::before{content:"";position:absolute;left:0;top:19px;width:8px;height:1.5px;background:var(--crimson)}
+@media (max-width:760px){.exchange{grid-template-columns:1fr}}
+
+/* ---------- pricing ---------- */
+.price{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line);margin-top:44px}
+.price > div{background:var(--paper);padding:30px 28px}
+.price > div:first-child{background:var(--crimson-soft);border-bottom:3px solid var(--crimson)}
+.price .amt{font-family:var(--display);font-weight:800;font-size:clamp(26px,3.2vw,34px);
+  letter-spacing:-.03em;line-height:1.05;margin-bottom:10px}
+.price .who{font-size:13.5px;color:var(--ink-3);margin-bottom:18px}
+.price p{font-size:15px;color:var(--ink-2);line-height:1.55}
+@media (max-width:820px){.price{grid-template-columns:1fr}}
+.price-note{margin-top:24px;font-size:15px;color:var(--ink-2);max-width:68ch}
+
+/* ---------- checklist ---------- */
+.check{margin-top:36px;padding:0;list-style:none;border-top:1px solid var(--line);
+  display:grid;grid-template-columns:1fr 1fr;gap:0 48px}
+@media (max-width:820px){.check{grid-template-columns:1fr}}
+.check li{padding:14px 0 14px 26px;border-bottom:1px solid var(--line);position:relative;
+  font-size:15px;color:var(--ink-2);line-height:1.5}
+.check li::before{content:"";position:absolute;left:0;top:22px;width:11px;height:1.5px;background:var(--crimson)}
+.check strong{color:var(--ink);font-weight:600}
+
+/* ---------- repos ---------- */
+.repos{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:40px}
+@media (max-width:880px){.repos{grid-template-columns:1fr}}
+.repo{border:1px solid var(--line-strong);background:var(--white);padding:22px;text-decoration:none;
+  color:var(--ink);display:block;transition:border-color .15s ease}
+.repo:hover{border-color:var(--crimson)}
+.repo .kind{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);display:block;margin-bottom:10px}
+.repo .name{font-family:var(--mono);font-size:15px;color:var(--crimson);word-break:break-all;display:block}
+.repo p{font-size:14px;color:var(--ink-2);margin-top:10px;line-height:1.5}
+pre{background:var(--ink);color:#E8E4F5;font-family:var(--mono);font-size:14px;
+  padding:20px 22px;overflow-x:auto;margin:28px 0 0;line-height:1.7}
+pre .c{color:#8F87B0}
+
+/* ---------- faq ---------- */
+.faq{margin-top:40px;border-top:1px solid var(--line)}
+details{border-bottom:1px solid var(--line)}
+summary{cursor:pointer;padding:18px 0;font-weight:600;font-size:16.5px;list-style:none;
+  display:flex;justify-content:space-between;gap:20px;align-items:center}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-family:var(--mono);color:var(--crimson);font-size:18px;flex:0 0 auto}
+details[open] summary::after{content:"–"}
+details p{padding:0 0 20px;max-width:66ch;color:var(--ink-2);font-size:15.5px}
+
+/* ---------- form ---------- */
+.contact{background:var(--white);border-top:1px solid var(--line)}
+.form{margin-top:40px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px 28px}
+@media (max-width:700px){.form-grid{grid-template-columns:1fr}}
+.field{display:flex;flex-direction:column;gap:7px;min-width:0}
+.field.wide{grid-column:1/-1}
+.field label{font-size:14.5px;font-weight:600;color:var(--ink)}
+.field .hint{display:block;font-size:13.5px;color:var(--ink-3);font-weight:400;
+  line-height:1.4;margin-top:3px}
+.field input,.field select,.field textarea{
+  font-family:var(--body);font-size:16px;color:var(--ink);background:var(--white);
+  border:1px solid var(--line-strong);border-radius:2px;padding:11px 13px;width:100%}
+.field textarea{min-height:104px;resize:vertical;line-height:1.5}
+.field input:focus,.field select:focus,.field textarea:focus{
+  outline:none;border-color:var(--crimson);box-shadow:0 0 0 3px var(--crimson-soft)}
+.req{color:var(--crimson)}
+.hp{position:absolute!important;left:-9999px;width:1px;height:1px;overflow:hidden}
+.form-submit{margin-top:32px;display:flex;flex-wrap:wrap;gap:20px;align-items:center}
+.form-submit button{font-family:var(--body);font-size:15px;font-weight:600;cursor:pointer;
+  padding:13px 26px;border-radius:2px;border:1.5px solid var(--ink);
+  background:var(--ink);color:var(--white);transition:background .15s ease,border-color .15s ease}
+.form-submit button:hover:not(:disabled){background:var(--crimson);border-color:var(--crimson)}
+.form-submit button:disabled{opacity:.5;cursor:default}
+.form-msg{font-size:14.5px;line-height:1.5;color:var(--crimson);max-width:46ch}
+.form-done{border:1px solid var(--crimson);background:var(--crimson-soft);
+  padding:34px 30px;margin-top:40px}
+.form-done[hidden]{display:none}
+.form-done h3{font-family:var(--display);font-size:24px;font-weight:800;
+  letter-spacing:-.02em;margin-bottom:10px}
+.form-done p{font-size:16px;color:var(--ink-2);max-width:56ch}
+.contact-alt{margin-top:28px;font-size:15.5px;color:var(--ink-2)}
+
+/* ---------- footer ---------- */
+footer{background:var(--ink);color:#B7AFD0;padding:56px 0 44px;font-size:14.5px}
+footer a{color:#fff;text-decoration:none;border-bottom:1px solid #6A6290}
+footer a:hover{border-color:#fff}
+.foot-grid{display:flex;flex-wrap:wrap;gap:40px;justify-content:space-between}
+.funders{margin-top:32px;padding-top:24px;border-top:1px solid #38315A;line-height:1.8;max-width:70ch}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap bar">
+    <a class="logo" href="#top">
+      <!-- LOGO PLACEHOLDER: replace the span below with <img src="navgurukul-logo.svg" alt="NavGurukul"> -->
+      <span class="logo-fallback"><span>nav</span>gurukul</span>
+    </a>
+    <nav class="links">
+      <a href="#what">What it is</a>
+      <a href="#demo">See it work</a>
+      <a href="#uses">Where it fits</a>
+      <a href="#integrate">Integrate</a>
+      <a href="#cost">Cost</a>
+      <a href="#terms">Licence</a>
+    </nav>
+    <a class="btn btn-solid btn-sm" href="#contact">Talk to us</a>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="wrap">
+    <h1>Voice AI at roughly the cost of text.</h1>
+    <p class="lede">
+      NavGurukul has built an open-source speech-to-speech layer that runs inside the browser
+      on the laptops organisations already have. Voice synthesis happens entirely on the machine,
+      and recognition can too. Any organisation can pick it up and build voice into what they
+      already do.
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-solid" href="#demo">Try the live demo</a>
+      <a class="btn btn-ghost" href="#contact">Start a conversation</a>
+    </div>
+
+    <div class="cost">
+      <div class="cost-labels">
+        <div>
+          <div class="cost-num">$5&ndash;10 / hour</div>
+          <div class="cost-cap">What commercial real-time voice APIs cost. Roughly &#8377;450&ndash;900 an hour of conversation.</div>
+        </div>
+        <div class="right">
+          <div class="cost-num now">$0.10&ndash;0.20 / hour</div>
+          <div class="cost-cap">What it costs on our layer. Around &#8377;9&ndash;18, because the speech never touches a server.</div>
+        </div>
+      </div>
+      <svg id="wave" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PROBLEM ============ -->
+<section class="rule" id="what">
+  <div class="wrap">
+    <h2 class="narrow">The people you serve can already hold a conversation.<br>Until now, that was the expensive way in.</h2>
+    <div class="section-intro">
+      <p>
+        Over 400 million Indians can't comfortably read a screen. Farmers, ASHA workers, daily-wage
+        earners, first-generation learners. Every service built for them still arrives as text on a
+        form, and the workaround is always the same: put a human in the middle, or leave them out.
+      </p>
+      <p>
+        Voice was the obvious answer and the priced-out one. At commercial rates, an organisation
+        running 7,500 voice sessions would spend roughly &#8377;36 lakh on speech processing alone.
+        More than simply paying people to do the work by hand. So voice stayed a demo, and never
+        became infrastructure.
+      </p>
+      <p>
+        We hit this wall building learning tools for our own students, and spent a year engineering
+        around it rather than accepting it.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HOW IT WORKS ============ -->
+<section class="rule">
+  <div class="wrap">
+    <h2>How it works</h2>
+    <p class="section-intro">
+      Almost everything happens on the user's device. That single decision is what collapses the
+      cost, removes the connectivity requirement, and keeps voice data private by default.
+    </p>
+
+    <div class="pipe">
+      <div>
+        <span class="step-n">01</span>
+        <h3>Audio is captured locally</h3>
+        <p>The browser or app takes the microphone input. Nothing is uploaded.</p>
+      </div>
+      <div>
+        <span class="step-n">02</span>
+        <h3>Speech becomes text</h3>
+        <p>Chrome's built-in Web Speech API recognises it at no cost. On Chrome 139+ this can run fully on-device.</p>
+      </div>
+      <div>
+        <span class="step-n">03</span>
+        <h3>Your model handles the conversation</h3>
+        <p>Only text goes to the cloud. Plug in whichever LLM you already use. No lock-in.</p>
+      </div>
+      <div>
+        <span class="step-n">04</span>
+        <h3>Text becomes speech on-device</h3>
+        <p>Piper TTS runs in-browser via ONNX Runtime, in an Indian-accent voice we trained.</p>
+      </div>
+      <div>
+        <span class="step-n">05</span>
+        <h3>Turn-taking is smoothed out</h3>
+        <p>Voice activity detection and buffering keep pauses feeling like a conversation.</p>
+      </div>
+    </div>
+
+    <p class="pipe-note">
+      Nothing routes through our servers at any point. Speech synthesis is always local, and with
+      Chrome's on-device recognition the audio stays on the machine too. That is what keeps DPDP
+      compliance tractable, and what lets this survive a connection with two bars of signal.
+      The speech layer adds under a second to a turn; how long the whole exchange takes depends
+      on how fast your model answers, which in practice is two to three seconds.
+    </p>
+
+    <div class="specs">
+      <div><div class="spec-v">~96%</div><div class="spec-l">Lower cost than commercial speech APIs</div></div>
+      <div><div class="spec-v">No servers</div><div class="spec-l">No speech infrastructure for you to host or scale</div></div>
+      <div><div class="spec-v">&lt;1 sec</div><div class="spec-l">Added by the speech layer, on top of your model's reply</div></div>
+      <div><div class="spec-v">5,000</div><div class="spec-l">Users on it in production today</div></div>
+      <div><div class="spec-v">On-device</div><div class="spec-l">Synthesis always local, recognition optionally so</div></div>
+      <div><div class="spec-v">Any LLM</div><div class="spec-l">Bring your own model and API key</div></div>
+      <div><div class="spec-v">Offline</div><div class="spec-l">Speech runs unconnected; full offline needs a local model</div></div>
+      <div><div class="spec-v">GPL</div><div class="spec-l">Open source on npm and GitHub, free to use</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DEMO ============ -->
+<section class="demo" id="demo">
+  <div class="wrap">
+    <h2>See it work</h2>
+    <p class="section-intro">
+      A sandbox you can talk to yourself, and the full API documentation behind it.
+      Open the demo on a laptop in Chrome, Safari or Edge, and allow microphone access when asked.
+    </p>
+
+    <div class="demo-actions">
+      <a class="btn btn-solid" href="https://speech-to-speech.d36dd6uqwhf4ap.amplifyapp.com/" target="_blank" rel="noopener">Open the live demo</a>
+      <a class="btn btn-ghost" href="https://www.npmjs.com/package/speech-to-speech" target="_blank" rel="noopener">Read the technical documentation</a>
+    </div>
+
+    <p class="demo-note">
+      One thing you'll hear: a word occasionally clips at a sentence boundary while the system
+      works out that you've finished speaking. We're tuning it. That's the honest state of V1,
+      and we'd rather you met it here than three weeks into a pilot.
+    </p>
+  </div>
+</section>
+
+<!-- ============ WHERE IT FITS ============ -->
+<section class="rule" id="uses">
+  <div class="wrap">
+    <h2>Where it fits</h2>
+    <p class="section-intro">
+      We built the layer for education because that is where our students were. The layer itself
+      doesn't know anything about education. Wherever people would rather speak than type, and
+      there's already a computer they come to for help, it applies.
+    </p>
+
+    <div class="sector-head">
+      <h3>Running in production today</h3>
+      <span>Education and employability, built by our own team</span>
+    </div>
+    <div class="grid">
+      <div class="tile live">
+        <h4>AI Interviewer</h4>
+        <p>Job-description-specific voice interview practice with structured feedback. Unlimited attempts, no mentor required.</p>
+        <span class="metric">1,663 sessions &middot; 83% completion</span>
+      </div>
+      <div class="tile live">
+        <h4>Socratic Tutor</h4>
+        <p>Guides learners through breaking a problem down, catching reasoning gaps as they go rather than handing over answers.</p>
+        <span class="metric">108 learners &middot; 981 hours</span>
+      </div>
+      <div class="tile live">
+        <h4>Abracadraw</h4>
+        <p>A game that teaches people how to instruct an AI, by having them write prompts that recreate a target image.</p>
+        <span class="metric">22 government schools &middot; 24 min avg</span>
+      </div>
+      <div class="tile live">
+        <h4>Adaptive assessment</h4>
+        <p>Question difficulty adjusts in real time, with audio playback so reading ability isn't what's being tested.</p>
+        <span class="metric">2,300+ learners &middot; 34% use audio</span>
+      </div>
+    </div>
+
+    <div class="sector-head">
+      <h3>Ready to be built</h3>
+      <span>Places with a shared computer and a queue of people who'd rather talk than read</span>
+    </div>
+    <div class="grid">
+      <div class="tile open">
+        <h4>Farmer service points</h4>
+        <p>At an FPO office or Krishi Vigyan Kendra, spoken guidance on pest management, sowing windows, and which subsidy someone actually qualifies for.</p>
+      </div>
+      <div class="tile open">
+        <h4>Natural farming resource centres</h4>
+        <p>Composting, seed treatment and crop cycles explained out loud, so practice knowledge travels without a printed manual.</p>
+      </div>
+      <div class="tile open">
+        <h4>Health sub-centres</h4>
+        <p>Protocol refreshers and nutrition guidance for ASHA and anganwadi workers, at the shared machine already in the centre.</p>
+      </div>
+      <div class="tile open">
+        <h4>Common Service Centres</h4>
+        <p>Explain a government form out loud and file the application by voice, rather than the operator filling it in on the applicant's behalf.</p>
+      </div>
+      <div class="tile open">
+        <h4>Gram sabha records</h4>
+        <p>Turn a council meeting into a spoken summary on the laptop already in the room, so every member has a record of what was decided.</p>
+      </div>
+      <div class="tile open">
+        <h4>Self-help group meetings</h4>
+        <p>Read the group's ledger and loan terms aloud, so every member can check them and not only the one who can read.</p>
+      </div>
+      <div class="tile open">
+        <h4>Banking correspondent counters</h4>
+        <p>Scheme eligibility and plain-language financial guidance, spoken at the counter instead of handed over as a pamphlet.</p>
+      </div>
+      <div class="tile open">
+        <h4>Dairy collection centres</h4>
+        <p>Vaccination schedules and animal health advice for farmers who already walk in twice a day.</p>
+      </div>
+    </div>
+
+    <p class="pipe-note" style="margin-top:28px">
+      The common thread is a machine people travel to rather than carry. That's the honest shape of
+      V1, and it covers more of rural India than it first sounds: service centres, panchayat offices,
+      school labs and collection points are where most people already go when they need something done.
+    </p>
+  </div>
+</section>
+
+<!-- ============ PROOF ============ -->
+<section class="rule">
+  <div class="wrap">
+    <h2>What's actually been shipped</h2>
+    <p class="section-intro">
+      We'd rather show a small number that's real than a large number that's projected. Everything
+      below is deployed and measurable today.
+    </p>
+
+    <div class="proof-list">
+      <ul>
+        <li>
+          <div class="proof-k">Open source</div>
+          <div class="proof-d">The full speech-to-speech library is on GitHub and published to npm as <a href="https://www.npmjs.com/package/speech-to-speech" target="_blank" rel="noopener" style="font-family:var(--mono);font-size:14px">speech-to-speech</a>, under the GNU General Public Licence. Free to audit, fork, and deploy.</div>
+        </li>
+        <li>
+          <div class="proof-k">Indian-accent voice</div>
+          <div class="proof-d">Our students called American-accented English "alien", so we trained a text-to-speech model on IISc's SPICOR dataset &mdash; 24,058 audio files, 49 hours &mdash; and published it on Hugging Face. It's the voice our own deployments use. The library also ships with the standard Piper voice set, so point it at our model rather than the default if you want the Indian accent.</div>
+        </li>
+        <li>
+          <div class="proof-k">Low-connectivity tested</div>
+          <div class="proof-d">Deployed across 22 government schools in Dantewada, Chhattisgarh, on the kind of hardware and bandwidth those schools actually have.</div>
+        </li>
+        <li>
+          <div class="proof-k">5,000 users</div>
+          <div class="proof-d">In production across NavGurukul's residential campuses and the Zuvy learning platform, with performance holding steady as concurrency grew.</div>
+        </li>
+        <li>
+          <div class="proof-k">Nine years behind it</div>
+          <div class="proof-d">NavGurukul has run residential tech campuses since 2016, placed 1,500+ alumni in jobs, and reached over a million school students through refurbished-device labs.</div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STATUS ============ -->
+<section class="rule" id="status">
+  <div class="wrap">
+    <h2>Where this is today</h2>
+    <p class="section-intro">
+      This is V1, described honestly. You'd find all of it in the first fortnight of a pilot
+      anyway, and we'd rather you knew before you committed a team to it.
+    </p>
+
+    <ul class="status">
+      <li>
+        <span class="tag now">Available now</span>
+        <div>
+          <h3>English, on laptops</h3>
+          <p>English in an Indian accent is the primary production language, running in Chrome, Safari or Edge on a laptop. It's what the demo uses and what today's 5,000 users are on.</p>
+        </div>
+      </li>
+      <li>
+        <span class="tag soon">Built, slower</span>
+        <div>
+          <h3>Hindi</h3>
+          <p>A Hindi speech-to-speech build and a fine-tuned Hindi accent model both exist and work. Responses currently land in three to five seconds rather than English's two to three, so we'd call it usable but not yet as polished. Ask us for the Hindi demo if that's your use case.</p>
+        </div>
+      </li>
+      <li>
+        <span class="tag soon">3&ndash;4 weeks</span>
+        <div>
+          <h3>Other languages, on request</h3>
+          <p>We train and ship a new language or regional accent in three to four weeks from the point we agree on it. Bengali, Marathi, Telugu, Tamil, Gujarati and Punjabi are the ones on our development list. Name yours on the first call and it can be ready before your pilot opens.</p>
+        </div>
+      </li>
+      <li>
+        <span class="tag later">In research</span>
+        <div>
+          <h3>Phones</h3>
+          <p>Mobile performance isn't good enough to launch and we won't pretend otherwise. Where it gets to depends on how local speech models develop over the coming months, so we're not putting a date on it. Plan your pilot around a shared computer.</p>
+        </div>
+      </li>
+      <li>
+        <span class="tag later">Being tuned</span>
+        <div>
+          <h3>Turn-taking</h3>
+          <p>A word occasionally clips at a sentence boundary while the system works out that someone has stopped speaking. Knowing when a person has finished talking is a genuinely hard problem, and this is where our current engineering effort goes.</p>
+        </div>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ INTEGRATE ============ -->
+<section class="rule" id="integrate">
+  <div class="wrap">
+    <h2>Integrating it, in seven steps</h2>
+    <p class="section-intro">
+      Realistically this is a few weeks of work with our team alongside you, not a weekend.
+      Here's the shape of it so you know what you're agreeing to.
+    </p>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <h3>Tell us who your user is</h3>
+          <p>One call. If voice isn't the right answer for your problem, we'll say so.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>Pick one workflow</h3>
+          <p>One task, one language, one group of users. Narrow scopes ship; broad ones stall.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>Run the sandbox</h3>
+          <p>Install the library, point it at your own model key, and hear it work in a test build.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>Set up language and voice</h3>
+          <p>Launch on English, or name the language you need and we ship it in three to four weeks.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>Wire it into your product</h3>
+          <p>Your team builds the interface. Ours joins the integration reviews and unblocks you.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>Pilot with real users</h3>
+          <p>100 to 300 people on the machines they'll really use. Measure completion, comprehension, latency.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>Scale, and send fixes back</h3>
+          <p>What you fix upstream makes the layer better for everyone else building on it.</p>
+        </div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============ WHAT IT RUNS ON ============ -->
+<section class="rule">
+  <div class="wrap">
+    <h2>What it runs on</h2>
+    <p class="section-intro">
+      Built for the laptop, which is the machine that sits in school labs, panchayat offices and
+      field centres and gets shared by everyone who walks in. There are two ways to run it, and
+      the difference is where speech recognition happens.
+    </p>
+
+    <div class="exchange">
+      <div>
+        <h3>Standard setup</h3>
+        <div class="sub">Recognition in the cloud, synthesis local</div>
+        <ul>
+          <li>Chrome 25 or later, latest version recommended; Safari and Edge also work</li>
+          <li>A working microphone. A headset helps in a noisy room</li>
+          <li>Any modern laptop. A Core i3 with 8 GB of RAM is enough</li>
+          <li>Smoothest on Apple Silicon; runs well on mid-range Windows and Linux machines</li>
+          <li>Recognition streams audio to Google's speech service; the voice you hear back is generated on the machine</li>
+          <li>Nothing to install, no GPU, no server</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Fully on-device setup</h3>
+        <div class="sub">Everything local, nothing transmitted</div>
+        <ul>
+          <li>Chrome 139 or later, or local WebAssembly models</li>
+          <li>64-bit CPU with 4+ physical cores, 8 preferred</li>
+          <li>8 GB of RAM minimum, 16 GB recommended</li>
+          <li>A GPU with 4+ GB VRAM helps, but a CPU fallback works</li>
+          <li>300&ndash;800 MB of free disk for cached voice models</li>
+          <li>Works with no internet connection at all</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="price-note">
+      Most partners start on the standard setup because it runs on hardware they already have,
+      then move to on-device once they know which workflow matters. The application code is
+      identical either way. Performance scales with the machine: synthesis is smoothest on
+      Apple Silicon, and it runs well on mid-range Windows and Linux laptops.
+    </p>
+
+    <h3 style="margin-top:56px">Before you start</h3>
+
+    <ul class="check">
+      <li><strong>Chrome, Safari or Edge.</strong> On Windows, macOS or Linux. Firefox handles the voice output but not the recognition, so it isn't supported.</li>
+      <li><strong>HTTPS.</strong> Microphone access needs a secure origin, so your site or app has to be served over HTTPS.</li>
+      <li><strong>Two response headers.</strong> Speech-to-speech needs <span style="font-family:var(--mono);font-size:13.5px">Cross-Origin-Opener-Policy: same-origin</span> and <span style="font-family:var(--mono);font-size:13.5px">Cross-Origin-Embedder-Policy: require-corp</span> on your app. Worth checking early: they restrict third-party embeds and scripts, so an existing product may need adjusting before it can turn them on.</li>
+      <li><strong>Microphone permission.</strong> Your users grant it once, in the browser, the same way any call app asks.</li>
+      <li><strong>A language model key.</strong> Whichever provider you already use. Or ask us to run that side for you.</li>
+      <li><strong>One technical owner.</strong> Someone on your team who can install an npm package and stays with the project.</li>
+      <li><strong>No servers, no GPUs, no audio storage.</strong> There is no speech infrastructure for you to run or pay for.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ PRICING ============ -->
+<section class="rule" id="cost">
+  <div class="wrap">
+    <h2>What it costs</h2>
+    <p class="section-intro">
+      Nothing to integrate. This was built with philanthropic funding to be public infrastructure,
+      not a product line, so we don't charge for access, for setup, or for the support that gets
+      you live. The only money that changes hands is for compute you actually consume.
+    </p>
+
+    <div class="price">
+      <div>
+        <div class="amt">Free, always</div>
+        <div class="who">The speech layer</div>
+        <p>Open source under the GNU General Public Licence. No licence fee, no per-seat cost, no minimum commitment, nothing to renew. The obligations are copyleft and attribution, not money.</p>
+      </div>
+      <div>
+        <div class="amt">$0.10&ndash;0.20 / hour</div>
+        <div class="who">Model usage, if you bring your own key</div>
+        <p>Paid directly to your model provider at their rates, for the text conversation only. We never sit between you and that bill, and we take no margin on it.</p>
+      </div>
+      <div>
+        <div class="amt">At cost</div>
+        <div class="who">Model usage, if we run it for you</div>
+        <p>If you'd rather not manage a key, we can host that side and invoice you for metered usage only. <em style="color:var(--ink-3)">[Placeholder: confirm rate card, billing cycle and minimum, or remove this panel.]</em></p>
+      </div>
+    </div>
+
+    <p class="price-note">
+      Two things sit outside this. Training a voice for a language we don't yet support takes
+      three to four weeks of our team's time, and we'll tell you honestly what's involved before
+      anyone commits. And if you want us to build the application itself rather than support you
+      building it, that becomes a separate conversation.
+    </p>
+  </div>
+</section>
+
+<!-- ============ TERMS ============ -->
+<section class="rule" id="terms">
+  <div class="wrap">
+    <h2>Licensing and terms of use</h2>
+    <p class="section-intro">
+      The code is free, and the conditions attached to it are about keeping it that way.
+      Any organisation deploying the layer signs a short terms of service covering four things.
+    </p>
+
+    <ul class="check">
+      <li><strong>Sign the terms of service.</strong> A short agreement before deployment, covering the points below. We send it once you've decided to build. <em style="color:var(--ink-3)">[Placeholder: link the signed ToS document here.]</em></li>
+      <li><strong>Attribute us on your platform.</strong> A visible credit to NavGurukul wherever the voice layer is used, and in the public materials describing the product.</li>
+      <li><strong>Share your usage data with us.</strong> Periodic reporting on how the technology is being used, so we can evidence the impact and keep the layer funded. <em style="color:var(--ink-3)">[Placeholder: confirm the exact fields and reporting frequency.]</em></li>
+      <li><strong>Obtain your users' consent.</strong> You are responsible for telling the people who use your product what is being stored and shared, and for getting their consent, in line with the DPDP Act.</li>
+      <li><strong>Honour the GPL.</strong> Modifications and derivative works carry the same licence and stay open, with the original copyright and licence notices intact.</li>
+      <li><strong>Keep it open for the next one.</strong> Fixes you make to the layer itself come back upstream, so the organisation after you starts further ahead than you did.</li>
+    </ul>
+
+    <p class="price-note">
+      The GPL is a copyleft licence, which means software you build on this layer and distribute
+      carries the same obligations. If that creates a problem for how your organisation ships
+      software, raise it on the first call rather than at the end. It's a conversation worth
+      having early.
+    </p>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="rule">
+  <div class="wrap">
+    <h2>Questions we get asked</h2>
+
+    <div class="faq">
+      <details>
+        <summary>What does it cost to use?</summary>
+        <p>The layer is free and so is the help getting you live. We don't charge for integration, setup or support, because this was built with philanthropic funding to be shared infrastructure. Your only running cost is metered model usage, around $0.10&ndash;0.20 per hour of conversation, paid to your own provider. If you'd prefer we ran that side, we invoice at cost with no margin.</p>
+      </details>
+      <details>
+        <summary>Do we have to credit NavGurukul?</summary>
+        <p>Yes. Attribution is part of both the GPL and the terms of service: a visible credit wherever the voice layer is used, plus a mention when you write or present about the work. Attribution is how the next organisation finds this instead of paying $5 an hour for the same thing.</p>
+      </details>
+      <details>
+        <summary>What data do you want back from us?</summary>
+        <p>Usage data on how the technology is being used: sessions, minutes of conversation, languages, completion rates. Reporting it is part of the terms of service, because those numbers are what we take to funders to keep this free. You are responsible for telling your own users what is stored and shared and getting their consent before any of it is collected.</p>
+      </details>
+      <details>
+        <summary>Which languages work today?</summary>
+        <p>English in an Indian accent is the primary production language. Hindi is built and working, though responses take three to five seconds rather than two to three. Any other language or regional accent is trained on request and ships in three to four weeks, so it's rarely the thing that holds a pilot up. One note on setup: the library defaults to standard Piper voices, so you point it explicitly at our Indian-accent model to use it.</p>
+      </details>
+      <details>
+        <summary>What hardware does it need?</summary>
+        <p>A laptop running Chrome, Safari or Edge, and a working microphone. On the standard setup that's it, and a Core i3 with 8 GB of RAM is enough; it's smoothest on Apple Silicon and runs well on mid-range Windows and Linux machines. Running recognition fully on-device asks more: four or more CPU cores, 16 GB of RAM ideally, and a few hundred megabytes of disk for cached models. Phones aren't supported in V1.</p>
+      </details>
+      <details>
+        <summary>Where does the voice data go?</summary>
+        <p>Never to us. Text-to-speech always runs inside the browser, so the voice your users hear is generated on their own machine. Recognition depends on the mode: the standard setup uses Chrome's Web Speech API, which streams audio to Google's speech service, while Chrome's on-device recognition keeps it entirely local. Choose the on-device path when your users' audio must not leave the machine.</p>
+      </details>
+      <details>
+        <summary>Are we locked into a particular AI model?</summary>
+        <p>No. The layer handles voice in and voice out and is deliberately indifferent to what sits in between. Use whichever model you already have a relationship with, and swap it later without touching the voice layer.</p>
+      </details>
+      <details>
+        <summary>How fast does it actually feel?</summary>
+        <p>The speech layer itself adds under a second: recognition is effectively instant and voice synthesis takes a few hundred milliseconds once the model is cached. What a user waits for is mostly your language model, so a full turn typically runs two to three seconds in English. Keeping replies to two or three sentences makes the biggest difference to how responsive it feels.</p>
+      </details>
+      <details>
+        <summary>Does it really work offline?</summary>
+        <p>The speech layer does, completely. The conversation logic still needs to reach a model, so full offline operation means running a local model alongside it. We've built toward that with offline laptop deployments, and it's an active area of work.</p>
+      </details>
+      <details>
+        <summary>Who owns what we build together?</summary>
+        <p>You own your application and its content. The layer itself is GPL, so it stays open and anything derived from it inherits that licence. Improvements you make to the layer come back upstream. If the copyleft terms sit awkwardly with how your organisation distributes software, say so early and we'll talk it through.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CONTACT ============ -->
+<section class="contact" id="contact">
+  <div class="wrap">
+    <h2>Tell us what you're trying to build</h2>
+    <p class="section-intro">
+      A short form, and a real person reads it. If there's a fit we'll set up a call within a week.
+      If there isn't, we'll tell you that too.
+    </p>
+
+    <!-- FORMSPREE: create a form at formspree.io with the address that should receive
+         enquiries, then replace YOUR_FORM_ID below with the id from your endpoint
+         (it looks like https://formspree.io/f/mabcdefg). Nothing else needs changing. -->
+    <form class="form" id="enquiry" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+      <div class="form-grid">
+        <div class="field">
+          <label for="f-name">Your name <span class="req">*</span></label>
+          <input id="f-name" name="name" type="text" autocomplete="name" required>
+        </div>
+        <div class="field">
+          <label for="f-org">Organisation <span class="req">*</span></label>
+          <input id="f-org" name="organisation" type="text" autocomplete="organization" required>
+        </div>
+        <div class="field">
+          <label for="f-email">Email <span class="req">*</span></label>
+          <input id="f-email" name="email" type="email" autocomplete="email" required>
+        </div>
+        <div class="field">
+          <label for="f-sector">What does your organisation work on? <span class="req">*</span></label>
+          <select id="f-sector" name="sector" required>
+            <option value="">Choose one</option>
+            <option>Agriculture and natural farming</option>
+            <option>Health and nutrition</option>
+            <option>Governance and entitlements</option>
+            <option>Financial inclusion</option>
+            <option>Education and skilling</option>
+            <option>Environment, water and climate</option>
+            <option>Something else</option>
+          </select>
+        </div>
+        <div class="field wide">
+          <label for="f-users">Who would use the voice interface? <span class="req">*</span>
+            <span class="hint">Be specific &mdash; "farmers visiting our FPO centres" tells us more than a sector does.</span>
+          </label>
+          <input id="f-users" name="who_would_use_it" type="text" required>
+        </div>
+        <div class="field wide">
+          <label for="f-task">What would you want them to do by voice? <span class="req">*</span></label>
+          <textarea id="f-task" name="use_case" required></textarea>
+        </div>
+        <div class="field">
+          <label for="f-where">Where would they use it? <span class="req">*</span>
+            <span class="hint">V1 runs on laptops, so this matters.</span>
+          </label>
+          <select id="f-where" name="where_used" required>
+            <option value="">Choose one</option>
+            <option>A shared computer at a centre or office</option>
+            <option>Their own laptop</option>
+            <option>Their own phone</option>
+            <option>Not sure yet</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-lang">Which language do they speak?</label>
+          <input id="f-lang" name="language" type="text">
+        </div>
+        <div class="field">
+          <label for="f-tech">Who would build it?</label>
+          <select id="f-tech" name="technical_capacity">
+            <option value="">Choose one</option>
+            <option>We have developers in-house</option>
+            <option>We work with an external vendor</option>
+            <option>No technical capacity yet</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-when">When would you want to start?</label>
+          <select id="f-when" name="timeline">
+            <option value="">Choose one</option>
+            <option>Within the next month</option>
+            <option>This quarter</option>
+            <option>Still exploring</option>
+          </select>
+        </div>
+      </div>
+
+      <input type="hidden" name="_subject" value="Partner enquiry — Speech-to-Speech">
+
+      <!-- Copies each enquiry to the other two addresses. Formspree applies _cc on paid
+           plans only, so send one test submission and confirm all three received it.
+           Better: point the form action at a group alias (e.g. partnerships@navgurukul.org)
+           that contains all three, and delete this line. -->
+      <input type="hidden" name="_cc" value="abhishek.vl@navgurukul.org,pooja.b@navgurukul.org">
+
+      <div class="hp" aria-hidden="true">
+        <label for="f-hp">Leave this field empty</label>
+        <input id="f-hp" name="_gotcha" type="text" tabindex="-1" autocomplete="off">
+      </div>
+
+      <div class="form-submit">
+        <button type="submit" id="f-submit">Send enquiry</button>
+        <span class="form-msg" id="f-msg" role="status" aria-live="polite"></span>
+      </div>
+    </form>
+
+    <div class="form-done" id="f-done" hidden>
+      <h3>Thank you &mdash; that's with us.</h3>
+      <p>A person reads every enquiry. If there's a fit we'll come back within a week to set up a
+      call, and if there isn't we'll tell you that rather than leave you waiting.</p>
+    </div>
+
+    <p class="contact-alt">
+      Or write directly to
+      <!-- CONTACT PLACEHOLDER: swap in a partnerships alias if you have one -->
+      <a href="mailto:abhishek@navgurukul.org">abhishek@navgurukul.org</a>.
+      Abhishek Gupta, CEO, NavGurukul Foundation for Social Welfare.
+    </p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <div class="logo-fallback" style="color:#fff"><span style="color:var(--crimson)">nav</span>gurukul</div>
+        <p style="margin-top:10px;max-width:34ch">NavGurukul Foundation for Social Welfare. A Section 8 non-profit, registered 2016.</p>
+      </div>
+      <div>
+        <p><a href="https://www.navgurukul.org">navgurukul.org</a></p>
+        <p><a href="https://www.npmjs.com/package/speech-to-speech" target="_blank" rel="noopener">Technical documentation</a></p>
+        <p><a href="https://github.com/navgurukul/stt-tts-lib">GitHub</a></p>
+        <p><a href="#terms">Licence and terms</a></p>
+        <p><a href="#contact">Partner with us</a></p>
+      </div>
+    </div>
+
+    <div class="funders" style="margin-top:28px;padding-top:22px">
+      <strong style="color:#EDEAF5;font-weight:600">Released under the GNU General Public Licence.</strong>
+      You are free to run, study, modify and redistribute this software. Derivative works must carry
+      the same licence and keep the original copyright and licence notices intact, so the layer stays
+      open for everyone who comes after you. Deployment also requires a signed terms of service
+      covering attribution, usage reporting and user consent.
+    </div>
+
+    <div class="funders">
+      Supported by Amazon, Accenture, Macquarie, KPMG, Microsoft, Affle, The/Nudge Institute with Meta,
+      AVPN with Google, the Ares Charitable Foundation, and the Harish &amp; Bina Shah Foundation.
+    </div>
+  </div>
+</footer>
+
+<script>
+/* Submit the enquiry form in the background so the person stays on the page.
+   Formspree returns JSON when asked; on failure we fall back to the email address. */
+(function(){
+  var form = document.getElementById('enquiry');
+  if(!form) return;
+  var btn  = document.getElementById('f-submit');
+  var msg  = document.getElementById('f-msg');
+  var done = document.getElementById('f-done');
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    msg.textContent = '';
+
+    if(form.action.indexOf('YOUR_FORM_ID') !== -1){
+      msg.textContent = 'This form isn’t connected yet. Please email us instead.';
+      return;
+    }
+
+    btn.disabled = true;
+    var label = btn.textContent;
+    btn.textContent = 'Sending…';
+
+    fetch(form.action, {
+      method: 'POST',
+      body: new FormData(form),
+      headers: { 'Accept': 'application/json' }
+    }).then(function(res){
+      if(res.ok){
+        form.hidden = true;
+        done.hidden = false;
+        done.setAttribute('tabindex','-1');
+        done.focus();
+        return;
+      }
+      return res.json().then(function(data){
+        var detail = data && data.errors && data.errors.length
+          ? data.errors.map(function(x){ return x.message; }).join(', ')
+          : 'Something went wrong at our end.';
+        throw new Error(detail);
+      });
+    }).catch(function(err){
+      msg.textContent = (err.message || 'Something went wrong.') +
+        ' Please email abhishek@navgurukul.org instead.';
+      btn.disabled = false;
+      btn.textContent = label;
+    });
+  });
+})();
+
+(function(){
+  var svg = document.getElementById('wave');
+  if(!svg) return;
+  var N = 84, W = 1000, gap = 3;
+  var bw = (W - gap*(N-1))/N;
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  for(var i=0;i<N;i++){
+    var t = i/(N-1);
+    // amplitude collapses left-to-right: the cost drop, drawn as a waveform
+    var envelope = Math.pow(1-t, 1.9) * 0.92 + 0.055;
+    var jitter = 0.45 + 0.55*Math.abs(Math.sin(i*1.7)*Math.cos(i*0.63));
+    var h = Math.max(2, envelope * jitter * 100);
+
+    var r = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    r.setAttribute('x', (i*(bw+gap)).toFixed(2));
+    r.setAttribute('width', bw.toFixed(2));
+    r.setAttribute('y', (100-h).toFixed(2));
+    r.setAttribute('height', h.toFixed(2));
+    if(t > 0.86) r.setAttribute('fill','var(--crimson)');
+    if(!reduce){
+      r.style.transformOrigin = 'center bottom';
+      r.style.transform = 'scaleY(0)';
+      r.style.transition = 'transform .5s cubic-bezier(.2,.7,.3,1) ' + (i*11) + 'ms';
+    }
+    svg.appendChild(r);
+  }
+
+  if(!reduce){
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        var bars = svg.querySelectorAll('rect');
+        for(var j=0;j<bars.length;j++){ bars[j].style.transform = 'scaleY(1)'; }
+      });
+    });
+  }
+})();
+</script>
+
+</body>
+</html>
